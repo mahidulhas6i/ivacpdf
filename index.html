@@ -1,0 +1,1138 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>PDF Profile Manager</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600&display=swap" rel="stylesheet">
+  <style>
+    *, *::before, *::after { margin: 0; padding: 0; box-sizing: border-box; }
+
+    :root {
+      --bg-page: #0b0d11;
+      --bg-card: #13161c;
+      --bg-elevated: #1a1e26;
+      --bg-input: #1a1e26;
+      --bg-hover: #1f2430;
+      --border: #2a2f3a;
+      --border-hover: #3d4455;
+      --text-primary: #eef0f4;
+      --text-secondary: #9ca3b0;
+      --text-muted: #5c6370;
+      --accent: #4c8dff;
+      --accent-bg: rgba(76, 141, 255, 0.1);
+      --accent-border: rgba(76, 141, 255, 0.25);
+      --danger: #ef4444;
+      --danger-bg: rgba(239, 68, 68, 0.1);
+      --success: #22c55e;
+      --success-bg: rgba(34, 197, 94, 0.1);
+      --warning: #f59e0b;
+      --warning-bg: rgba(245, 158, 11, 0.1);
+      --radius: 10px;
+      --radius-lg: 14px;
+    }
+
+    body {
+      font-family: 'Inter', -apple-system, BlinkMacSystemFont, sans-serif;
+      background: var(--bg-page);
+      color: var(--text-primary);
+      min-height: 100vh;
+      -webkit-font-smoothing: antialiased;
+    }
+
+    /* ===== HEADER ===== */
+    .header {
+      background: var(--bg-card);
+      border-bottom: 1px solid var(--border);
+      padding: 0 24px;
+      height: 56px;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      position: sticky;
+      top: 0;
+      z-index: 100;
+      backdrop-filter: blur(12px);
+    }
+
+    .header-left {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+    }
+
+    .logo-icon {
+      width: 32px; height: 32px;
+      background: linear-gradient(135deg, #ef4444, #dc2626);
+      border-radius: 8px;
+      display: flex; align-items: center; justify-content: center;
+      font-size: 16px; font-weight: 600; color: #fff;
+    }
+
+    .logo-text {
+      font-size: 16px;
+      font-weight: 600;
+      color: var(--text-primary);
+      letter-spacing: -0.3px;
+    }
+
+    .header-version {
+      font-size: 11px;
+      color: var(--text-muted);
+      background: var(--bg-elevated);
+      padding: 2px 8px;
+      border-radius: 6px;
+    }
+
+    /* ===== CONTAINER ===== */
+    .container {
+      max-width: 1000px;
+      margin: 0 auto;
+      padding: 24px 20px;
+    }
+
+    /* ===== STATS ===== */
+    .stats-row {
+      display: grid;
+      grid-template-columns: repeat(3, 1fr);
+      gap: 12px;
+      margin-bottom: 24px;
+    }
+
+    .stat-card {
+      background: var(--bg-card);
+      border: 1px solid var(--border);
+      border-radius: var(--radius);
+      padding: 16px 18px;
+    }
+
+    .stat-label {
+      font-size: 11px;
+      font-weight: 500;
+      color: var(--text-muted);
+      text-transform: uppercase;
+      letter-spacing: 0.6px;
+      margin-bottom: 6px;
+    }
+
+    .stat-value {
+      font-size: 24px;
+      font-weight: 600;
+      color: var(--text-primary);
+      letter-spacing: -0.5px;
+    }
+
+    /* ===== CREATE ===== */
+    .create-row {
+      display: flex;
+      gap: 10px;
+      margin-bottom: 24px;
+    }
+
+    .input {
+      flex: 1;
+      padding: 11px 16px;
+      background: var(--bg-input);
+      border: 1px solid var(--border);
+      border-radius: var(--radius);
+      color: var(--text-primary);
+      font-size: 14px;
+      font-family: inherit;
+      outline: none;
+      transition: border-color 0.15s;
+    }
+
+    .input:focus { border-color: var(--accent); }
+    .input::placeholder { color: var(--text-muted); }
+
+    .btn {
+      padding: 10px 20px;
+      border: none;
+      border-radius: var(--radius);
+      font-size: 13px;
+      font-weight: 500;
+      font-family: inherit;
+      cursor: pointer;
+      transition: all 0.15s;
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+      white-space: nowrap;
+    }
+
+    .btn:active { transform: scale(0.97); }
+
+    .btn-accent {
+      background: var(--accent);
+      color: #fff;
+    }
+    .btn-accent:hover { background: #3a7df0; }
+
+    .btn-ghost {
+      background: var(--bg-elevated);
+      color: var(--text-secondary);
+      border: 1px solid var(--border);
+    }
+    .btn-ghost:hover { border-color: var(--border-hover); color: var(--text-primary); }
+
+    .btn-danger {
+      background: var(--danger-bg);
+      color: var(--danger);
+      border: 1px solid rgba(239,68,68,0.2);
+    }
+    .btn-danger:hover { background: rgba(239,68,68,0.15); }
+
+    .btn-sm {
+      padding: 6px 12px;
+      font-size: 12px;
+    }
+
+    .btn-icon {
+      padding: 7px 10px;
+      font-size: 15px;
+    }
+
+    /* ===== PROFILES GRID ===== */
+    .profiles-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fill, minmax(260px, 1fr));
+      gap: 14px;
+    }
+
+    .profile-card {
+      background: var(--bg-card);
+      border: 1px solid var(--border);
+      border-radius: var(--radius-lg);
+      padding: 18px;
+      cursor: pointer;
+      transition: all 0.2s;
+    }
+
+    .profile-card:hover {
+      border-color: var(--border-hover);
+      background: var(--bg-elevated);
+    }
+
+    .profile-card.active {
+      border-color: var(--accent);
+      box-shadow: 0 0 0 1px var(--accent), 0 0 20px rgba(76,141,255,0.08);
+    }
+
+    .card-top {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      margin-bottom: 12px;
+    }
+
+    .card-name {
+      font-size: 15px;
+      font-weight: 600;
+      color: var(--text-primary);
+      letter-spacing: -0.2px;
+    }
+
+    .card-badge {
+      font-size: 11px;
+      font-weight: 500;
+      padding: 3px 10px;
+      border-radius: 20px;
+    }
+
+    .badge-full {
+      background: var(--success-bg);
+      color: var(--success);
+    }
+
+    .badge-partial {
+      background: var(--accent-bg);
+      color: var(--accent);
+    }
+
+    .badge-empty {
+      background: var(--bg-elevated);
+      color: var(--text-muted);
+    }
+
+    .card-progress {
+      height: 4px;
+      background: var(--bg-elevated);
+      border-radius: 2px;
+      margin-bottom: 12px;
+      overflow: hidden;
+    }
+
+    .card-progress-fill {
+      height: 100%;
+      border-radius: 2px;
+      transition: width 0.3s;
+    }
+
+    .progress-full { background: var(--success); }
+    .progress-partial { background: var(--accent); }
+    .progress-empty { background: var(--text-muted); }
+
+    .card-footer {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+    }
+
+    .card-date {
+      font-size: 11px;
+      color: var(--text-muted);
+    }
+
+    .card-link {
+      font-size: 11px;
+      color: var(--accent);
+      background: var(--accent-bg);
+      padding: 4px 10px;
+      border-radius: 6px;
+      display: flex;
+      align-items: center;
+      gap: 4px;
+    }
+
+    /* ===== DETAIL PANEL ===== */
+    .detail-panel {
+      margin-top: 20px;
+      background: var(--bg-card);
+      border: 1px solid var(--border);
+      border-radius: var(--radius-lg);
+      overflow: hidden;
+      display: none;
+      animation: slideDown 0.2s ease;
+    }
+
+    @keyframes slideDown {
+      from { opacity: 0; transform: translateY(-8px); }
+      to { opacity: 1; transform: translateY(0); }
+    }
+
+    .detail-panel.open { display: block; }
+
+    .detail-top {
+      padding: 18px 20px;
+      border-bottom: 1px solid var(--border);
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+    }
+
+    .detail-title {
+      font-size: 17px;
+      font-weight: 600;
+      color: var(--text-primary);
+    }
+
+    .detail-actions {
+      display: flex;
+      gap: 8px;
+    }
+
+    .detail-body {
+      padding: 20px;
+    }
+
+    .fetch-box {
+      background: var(--bg-elevated);
+      border: 1px solid var(--border);
+      border-radius: var(--radius);
+      padding: 12px 16px;
+      margin-bottom: 18px;
+      display: flex;
+      align-items: center;
+      gap: 10px;
+    }
+
+    .fetch-label {
+      font-size: 12px;
+      color: var(--text-muted);
+      white-space: nowrap;
+    }
+
+    .fetch-url {
+      flex: 1;
+      font-size: 13px;
+      font-family: 'SF Mono', 'Fira Code', monospace;
+      color: var(--accent);
+      word-break: break-all;
+    }
+
+    /* ===== UPLOAD AREA ===== */
+    .upload-zone {
+      border: 2px dashed var(--border);
+      border-radius: var(--radius-lg);
+      padding: 32px;
+      text-align: center;
+      margin-bottom: 18px;
+      cursor: pointer;
+      transition: all 0.2s;
+    }
+
+    .upload-zone:hover {
+      border-color: var(--accent);
+      background: var(--accent-bg);
+    }
+
+    .upload-zone.disabled {
+      opacity: 0.4;
+      cursor: not-allowed;
+      pointer-events: none;
+    }
+
+    .upload-zone.dragover {
+      border-color: var(--accent);
+      background: var(--accent-bg);
+    }
+
+    .upload-icon {
+      font-size: 32px;
+      color: var(--text-muted);
+      margin-bottom: 8px;
+    }
+
+    .upload-text {
+      font-size: 14px;
+      color: var(--text-secondary);
+      margin-bottom: 4px;
+    }
+
+    .upload-hint {
+      font-size: 12px;
+      color: var(--text-muted);
+    }
+
+    .upload-zone input { display: none; }
+
+    .upload-zone.secondary {
+      border-color: var(--accent-border);
+    }
+
+    .upload-zone.secondary:hover {
+      border-color: var(--accent);
+      background: var(--accent-bg);
+    }
+
+    .upload-zones-row {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 12px;
+      margin-bottom: 18px;
+    }
+
+    /* ===== PDF FILE LIST ===== */
+    .pdf-list {
+      list-style: none;
+      display: flex;
+      flex-direction: column;
+      gap: 8px;
+    }
+
+    /* ===== INLINE PDF VIEWER ===== */
+    .pdf-viewer {
+      display: none;
+      margin-top: 16px;
+      border: 1px solid var(--border);
+      border-radius: var(--radius);
+      overflow: hidden;
+      background: var(--bg-elevated);
+    }
+
+    .pdf-viewer.open { display: block; }
+
+    .pdf-viewer-header {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      padding: 10px 16px;
+      background: var(--bg-elevated);
+      border-bottom: 1px solid var(--border);
+    }
+
+    .pdf-viewer-title {
+      font-size: 13px;
+      font-weight: 500;
+      color: var(--text-primary);
+    }
+
+    .pdf-viewer-frame {
+      width: 100%;
+      height: 75vh;
+      border: none;
+      background: #fff;
+    }
+
+    .pdf-item {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+      padding: 12px 16px;
+      background: var(--bg-elevated);
+      border-radius: var(--radius);
+      transition: background 0.15s;
+    }
+
+    .pdf-item:hover { background: var(--bg-hover); }
+
+    .pdf-file-icon {
+      width: 36px; height: 36px;
+      background: var(--danger-bg);
+      border-radius: 8px;
+      display: flex; align-items: center; justify-content: center;
+      font-size: 14px; font-weight: 600; color: var(--danger);
+      flex-shrink: 0;
+    }
+
+    .pdf-file-info {
+      flex: 1;
+      min-width: 0;
+    }
+
+    .pdf-file-name {
+      font-size: 13px;
+      font-weight: 500;
+      color: var(--text-primary);
+      white-space: nowrap;
+      overflow: hidden;
+      text-overflow: ellipsis;
+    }
+
+    .pdf-file-date {
+      font-size: 11px;
+      color: var(--text-muted);
+      margin-top: 2px;
+    }
+
+    .pdf-file-actions {
+      display: flex;
+      gap: 4px;
+      flex-shrink: 0;
+    }
+
+    /* ===== EMPTY STATE ===== */
+    .empty-state {
+      text-align: center;
+      padding: 40px 20px;
+      color: var(--text-muted);
+    }
+
+    .empty-icon {
+      font-size: 36px;
+      margin-bottom: 10px;
+    }
+
+    .empty-title {
+      font-size: 15px;
+      font-weight: 500;
+      color: var(--text-secondary);
+      margin-bottom: 4px;
+    }
+
+    .empty-sub {
+      font-size: 13px;
+      color: var(--text-muted);
+    }
+
+    /* ===== TOAST ===== */
+    .toast {
+      position: fixed;
+      bottom: 24px;
+      right: 24px;
+      padding: 12px 20px;
+      border-radius: var(--radius);
+      font-size: 13px;
+      font-weight: 500;
+      color: #fff;
+      z-index: 1000;
+      opacity: 0;
+      transform: translateY(10px);
+      transition: all 0.3s;
+      font-family: inherit;
+      backdrop-filter: blur(8px);
+    }
+
+    .toast.show { opacity: 1; transform: translateY(0); }
+    .toast.success { background: rgba(34,197,94,0.9); }
+    .toast.error { background: rgba(239,68,68,0.9); }
+
+    /* ===== MODAL OVERLAY ===== */
+    .modal-overlay {
+      position: fixed;
+      inset: 0;
+      background: rgba(0,0,0,0.6);
+      backdrop-filter: blur(4px);
+      display: none;
+      align-items: center;
+      justify-content: center;
+      z-index: 200;
+    }
+
+    .modal-overlay.open { display: flex; }
+
+    .modal {
+      background: var(--bg-card);
+      border: 1px solid var(--border);
+      border-radius: var(--radius-lg);
+      padding: 24px;
+      width: 90%;
+      max-width: 400px;
+    }
+
+    .modal-title {
+      font-size: 16px;
+      font-weight: 600;
+      color: var(--text-primary);
+      margin-bottom: 8px;
+    }
+
+    .modal-text {
+      font-size: 13px;
+      color: var(--text-secondary);
+      margin-bottom: 20px;
+      line-height: 1.5;
+    }
+
+    .modal-actions {
+      display: flex;
+      gap: 8px;
+      justify-content: flex-end;
+    }
+
+    /* ===== RESPONSIVE ===== */
+    @media (max-width: 640px) {
+      .stats-row { grid-template-columns: 1fr; gap: 8px; }
+      .stat-card { padding: 12px 14px; }
+      .stat-value { font-size: 20px; }
+      .create-row { flex-direction: column; }
+      .profiles-grid { grid-template-columns: 1fr; }
+      .container { padding: 16px 12px; }
+      .detail-top { flex-direction: column; gap: 12px; align-items: flex-start; }
+      .detail-actions { width: 100%; }
+      .detail-actions .btn { flex: 1; justify-content: center; }
+      .fetch-box { flex-direction: column; align-items: flex-start; }
+      .pdf-item { flex-wrap: wrap; }
+      .pdf-file-actions { width: 100%; justify-content: flex-end; margin-top: 4px; }
+      .header { padding: 0 14px; }
+      .logo-text { font-size: 14px; }
+      .upload-zones-row { grid-template-columns: 1fr; }
+    }
+  </style>
+</head>
+<body>
+
+  <div class="header">
+    <div class="header-left">
+      <div class="logo-icon">P</div>
+      <span class="logo-text">PDF Profile Manager</span>
+    </div>
+    <span class="header-version">v1.0</span>
+  </div>
+
+  <div class="container">
+    <!-- Stats -->
+    <div class="stats-row" id="statsRow">
+      <div class="stat-card">
+        <div class="stat-label">Profiles</div>
+        <div class="stat-value" id="statProfiles">0</div>
+      </div>
+      <div class="stat-card">
+        <div class="stat-label">Total PDFs</div>
+        <div class="stat-value" id="statPdfs">0</div>
+      </div>
+      <div class="stat-card">
+        <div class="stat-label">Storage</div>
+        <div class="stat-value" id="statStorage">0 B</div>
+      </div>
+    </div>
+
+    <!-- Create -->
+    <div class="create-row">
+      <input type="text" class="input" id="profileNameInput" placeholder="Enter profile name..."
+             maxlength="50" onkeydown="if(event.key==='Enter') createProfile()">
+      <button class="btn btn-accent" onclick="createProfile()">
+        <svg width="14" height="14" viewBox="0 0 14 14" fill="none"><path d="M7 1v12M1 7h12" stroke="currentColor" stroke-width="2" stroke-linecap="round"/></svg>
+        Create profile
+      </button>
+    </div>
+
+    <!-- Grid -->
+    <div class="profiles-grid" id="profilesGrid"></div>
+
+    <!-- Detail Panel -->
+    <div class="detail-panel" id="detailPanel">
+      <div class="detail-top">
+        <span class="detail-title" id="detailTitle"></span>
+        <div class="detail-actions">
+          <button class="btn btn-ghost btn-sm" onclick="renameProfile()">
+            <svg width="13" height="13" viewBox="0 0 13 13" fill="none"><path d="M8.5 1.5l3 3M1 10l-.5 2.5L3 12l8.5-8.5-3-3L1 10z" stroke="currentColor" stroke-width="1.2" stroke-linecap="round" stroke-linejoin="round"/></svg>
+            Rename
+          </button>
+          <button class="btn btn-danger btn-sm" onclick="deleteProfile()">
+            <svg width="13" height="13" viewBox="0 0 13 13" fill="none"><path d="M1.5 3.5h10M4.5 3.5V2a1 1 0 011-1h2a1 1 0 011 1v1.5M5.5 6v3.5M7.5 6v3.5M3 3.5l.5 7a1 1 0 001 1h4a1 1 0 001-1l.5-7" stroke="currentColor" stroke-width="1.2" stroke-linecap="round" stroke-linejoin="round"/></svg>
+            Delete
+          </button>
+          <button class="btn btn-ghost btn-sm" onclick="closeDetail()">
+            <svg width="12" height="12" viewBox="0 0 12 12" fill="none"><path d="M1 1l10 10M11 1L1 11" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"/></svg>
+            Close
+          </button>
+        </div>
+      </div>
+      <div class="detail-body">
+        <div class="fetch-box">
+          <span class="fetch-label">Fetch link</span>
+          <span class="fetch-url" id="fetchLink"></span>
+          <button class="btn btn-ghost btn-sm" onclick="copyFetchLink()">
+            <svg width="13" height="13" viewBox="0 0 13 13" fill="none"><rect x="4" y="4" width="8" height="8" rx="1.5" stroke="currentColor" stroke-width="1.2"/><path d="M9 4V2.5A1.5 1.5 0 007.5 1h-5A1.5 1.5 0 001 2.5v5A1.5 1.5 0 002.5 9H4" stroke="currentColor" stroke-width="1.2"/></svg>
+            Copy
+          </button>
+        </div>
+
+        <!-- Upload Zones -->
+        <div class="upload-zones-row" id="uploadZonesRow">
+          <!-- Primary Upload -->
+          <div class="upload-zone" id="primaryUpload" onclick="document.getElementById('primaryInput').click()">
+            <div class="upload-icon">
+              <svg width="36" height="36" viewBox="0 0 36 36" fill="none"><path d="M18 24V10M18 10l-6 6M18 10l6 6" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/><path d="M6 24v4a2 2 0 002 2h20a2 2 0 002-2v-4" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg>
+            </div>
+            <div class="upload-text">Upload primary file</div>
+            <div class="upload-hint">Single PDF — renamed to AppID_1</div>
+            <input type="file" id="primaryInput" accept=".pdf" onchange="uploadPdf(event, 'primary')">
+          </div>
+
+          <!-- Secondary Upload -->
+          <div class="upload-zone secondary" id="secondaryUpload" onclick="document.getElementById('secondaryInput').click()">
+            <div class="upload-icon">
+              <svg width="36" height="36" viewBox="0 0 36 36" fill="none"><path d="M18 24V10M18 10l-6 6M18 10l6 6" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/><path d="M6 24v4a2 2 0 002 2h20a2 2 0 002-2v-4" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg>
+            </div>
+            <div class="upload-text" id="secondaryText">Upload secondary files</div>
+            <div class="upload-hint" id="secondaryHint">Up to 3 PDFs — renamed to AppID_2, _3, _4</div>
+            <input type="file" id="secondaryInput" accept=".pdf" multiple onchange="uploadPdf(event, 'secondary')">
+          </div>
+        </div>
+
+        <ul class="pdf-list" id="pdfList"></ul>
+
+        <!-- Inline PDF Viewer -->
+        <div class="pdf-viewer" id="pdfViewer">
+          <div class="pdf-viewer-header">
+            <span class="pdf-viewer-title" id="pdfViewerTitle"></span>
+            <button class="btn btn-ghost btn-sm" onclick="closePdfViewer()">
+              <svg width="12" height="12" viewBox="0 0 12 12" fill="none"><path d="M1 1l10 10M11 1L1 11" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"/></svg>
+              Close
+            </button>
+          </div>
+          <iframe id="pdfViewerFrame" class="pdf-viewer-frame"></iframe>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <div class="toast" id="toast"></div>
+
+  <!-- Hidden replace input -->
+  <input type="file" id="replaceInput" accept=".pdf" style="display:none" onchange="handleReplace(event)">
+
+  <!-- Confirm Modal -->
+  <div class="modal-overlay" id="confirmModal">
+    <div class="modal">
+      <div class="modal-title" id="modalTitle">Confirm</div>
+      <div class="modal-text" id="modalText"></div>
+      <div class="modal-actions">
+        <button class="btn btn-ghost btn-sm" onclick="closeModal()">Cancel</button>
+        <button class="btn btn-danger btn-sm" id="modalConfirmBtn" onclick="">Confirm</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- Prompt Modal (for rename) -->
+  <div class="modal-overlay" id="promptModal">
+    <div class="modal">
+      <div class="modal-title" id="promptTitle">Rename</div>
+      <div class="modal-text" id="promptText"></div>
+      <input type="text" class="input" id="promptInput" style="margin-bottom:16px" maxlength="50"
+             onkeydown="if(event.key==='Enter') document.getElementById('promptConfirmBtn').click()">
+      <div class="modal-actions">
+        <button class="btn btn-ghost btn-sm" onclick="closePrompt()">Cancel</button>
+        <button class="btn btn-accent btn-sm" id="promptConfirmBtn">Rename</button>
+      </div>
+    </div>
+  </div>
+
+  <script>
+    let activeProfile = null;
+
+    // --- Format file size ---
+    function formatSize(bytes) {
+      if (!bytes || bytes === 0) return '0 B';
+      if (bytes < 1024) return bytes + ' B';
+      if (bytes < 1024 * 1024) return (bytes / 1024).toFixed(1) + ' KB';
+      return (bytes / (1024 * 1024)).toFixed(1) + ' MB';
+    }
+
+    // --- Toast ---
+    function showToast(msg, type = 'success') {
+      const t = document.getElementById('toast');
+      t.textContent = msg;
+      t.className = `toast ${type} show`;
+      setTimeout(() => t.classList.remove('show'), 3000);
+    }
+
+    // --- Modal ---
+    function showConfirm(title, text, onConfirm) {
+      document.getElementById('modalTitle').textContent = title;
+      document.getElementById('modalText').textContent = text;
+      document.getElementById('modalConfirmBtn').onclick = () => { closeModal(); onConfirm(); };
+      document.getElementById('confirmModal').classList.add('open');
+    }
+
+    function closeModal() {
+      document.getElementById('confirmModal').classList.remove('open');
+    }
+
+    // --- API ---
+    async function api(url, opts = {}) {
+      try {
+        const res = await fetch(url, opts);
+        const data = await res.json();
+        if (!res.ok) throw new Error(data.error || 'Request failed');
+        return data;
+      } catch (err) {
+        showToast(err.message, 'error');
+        throw err;
+      }
+    }
+
+    // --- Load profiles ---
+    async function loadProfiles() {
+      const grid = document.getElementById('profilesGrid');
+      try {
+        const profiles = await api('/api/profiles');
+
+        // Update stats
+        const totalPdfs = profiles.reduce((sum, p) => sum + p.pdfCount, 0);
+        const totalSize = profiles.reduce((sum, p) => sum + (p.totalSize || 0), 0);
+        document.getElementById('statProfiles').textContent = profiles.length;
+        document.getElementById('statPdfs').textContent = totalPdfs;
+        document.getElementById('statStorage').textContent = formatSize(totalSize);
+
+        if (profiles.length === 0) {
+          grid.innerHTML = `
+            <div class="empty-state" style="grid-column:1/-1">
+              <div class="empty-icon">
+                <svg width="40" height="40" viewBox="0 0 40 40" fill="none"><rect x="6" y="4" width="28" height="32" rx="3" stroke="currentColor" stroke-width="1.5"/><path d="M14 14h12M14 20h8M14 26h10" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"/></svg>
+              </div>
+              <div class="empty-title">No profiles yet</div>
+              <div class="empty-sub">Create your first profile to get started</div>
+            </div>`;
+          return;
+        }
+
+        grid.innerHTML = profiles.map(p => {
+          const pct = (p.pdfCount / 4) * 100;
+          const badgeClass = p.pdfCount === 4 ? 'badge-full' : p.pdfCount > 0 ? 'badge-partial' : 'badge-empty';
+          const progressClass = p.pdfCount === 4 ? 'progress-full' : p.pdfCount > 0 ? 'progress-partial' : 'progress-empty';
+          return `
+            <div class="profile-card ${activeProfile === p.name ? 'active' : ''}" onclick="openProfile('${p.name}')">
+              <div class="card-top">
+                <span class="card-name">${p.name}</span>
+                <span class="card-badge ${badgeClass}">${p.pdfCount}/4</span>
+              </div>
+              <div class="card-progress">
+                <div class="card-progress-fill ${progressClass}" style="width:${pct}%"></div>
+              </div>
+              <div class="card-footer">
+                <span class="card-date">${new Date(p.createdAt).toLocaleDateString('en-US', { month: 'short', day: 'numeric' })} · ${formatSize(p.totalSize)}</span>
+                <span class="card-link">
+                  <svg width="11" height="11" viewBox="0 0 11 11" fill="none"><path d="M4.5 1.5h-2a1 1 0 00-1 1v6a1 1 0 001 1h6a1 1 0 001-1v-2" stroke="currentColor" stroke-width="1" stroke-linecap="round"/><path d="M7 1.5h2.5V4M5 6l4.5-4.5" stroke="currentColor" stroke-width="1" stroke-linecap="round" stroke-linejoin="round"/></svg>
+                  /${p.name}
+                </span>
+              </div>
+            </div>`;
+        }).join('');
+      } catch {
+        grid.innerHTML = '<div class="empty-state" style="grid-column:1/-1"><div class="empty-title">Failed to load</div></div>';
+      }
+    }
+
+    // --- Create ---
+    async function createProfile() {
+      const input = document.getElementById('profileNameInput');
+      const name = input.value.trim();
+      if (!name) return showToast('Enter a profile name', 'error');
+
+      await api('/api/profiles', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ name })
+      });
+
+      input.value = '';
+      showToast('Profile created');
+      loadProfiles();
+    }
+
+    // --- Open profile ---
+    function openProfile(name) {
+      activeProfile = name;
+      document.getElementById('detailPanel').classList.add('open');
+      document.getElementById('detailTitle').textContent = name;
+      document.getElementById('fetchLink').textContent = `${location.origin}/${name}`;
+      loadProfiles();
+      loadPdfs();
+      document.getElementById('detailPanel').scrollIntoView({ behavior: 'smooth', block: 'nearest' });
+    }
+
+    // --- Close ---
+    function closeDetail() {
+      activeProfile = null;
+      document.getElementById('detailPanel').classList.remove('open');
+      closePdfViewer();
+      loadProfiles();
+    }
+
+    // --- Delete profile ---
+    function deleteProfile() {
+      if (!activeProfile) return;
+      showConfirm('Delete profile', `This will permanently delete "${activeProfile}" and all its PDFs.`, async () => {
+        await api(`/api/profiles/${activeProfile}`, { method: 'DELETE' });
+        showToast('Profile deleted');
+        closeDetail();
+        loadProfiles();
+      });
+    }
+
+    // --- Rename profile ---
+    function renameProfile() {
+      if (!activeProfile) return;
+      showPrompt('Rename profile', `Enter a new name for "${activeProfile}":`, activeProfile, async (newName) => {
+        if (!newName || !newName.trim()) return;
+        const result = await api(`/api/profiles/${activeProfile}/rename`, {
+          method: 'PUT',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ newName })
+        });
+        showToast('Profile renamed');
+        openProfile(result.newName);
+        loadProfiles();
+      });
+    }
+
+    // --- Replace PDF ---
+    let replaceIndex = null;
+    function replacePdf(index) {
+      replaceIndex = index;
+      document.getElementById('replaceInput').click();
+    }
+
+    async function handleReplace(event) {
+      const file = event.target.files[0];
+      if (!file || !activeProfile || replaceIndex === null) return;
+
+      const formData = new FormData();
+      formData.append('pdf', file);
+
+      await api(`/api/profiles/${activeProfile}/pdfs/${replaceIndex}`, {
+        method: 'PUT',
+        body: formData
+      });
+
+      event.target.value = '';
+      replaceIndex = null;
+      showToast('PDF replaced');
+      closePdfViewer();
+      loadPdfs();
+      loadProfiles();
+    }
+
+    // --- Prompt Modal ---
+    function showPrompt(title, text, defaultVal, onConfirm) {
+      document.getElementById('promptTitle').textContent = title;
+      document.getElementById('promptText').textContent = text;
+      const input = document.getElementById('promptInput');
+      input.value = defaultVal || '';
+      input.select();
+      document.getElementById('promptConfirmBtn').onclick = () => {
+        closePrompt();
+        onConfirm(input.value);
+      };
+      document.getElementById('promptModal').classList.add('open');
+      setTimeout(() => input.focus(), 100);
+    }
+
+    function closePrompt() {
+      document.getElementById('promptModal').classList.remove('open');
+    }
+
+    // --- Load PDFs ---
+    async function loadPdfs() {
+      if (!activeProfile) return;
+      const list = document.getElementById('pdfList');
+      const primaryZone = document.getElementById('primaryUpload');
+      const secondaryZone = document.getElementById('secondaryUpload');
+      const secondaryText = document.getElementById('secondaryText');
+      const secondaryHint = document.getElementById('secondaryHint');
+
+      try {
+        const data = await api(`/api/data/${activeProfile}`);
+        const count = data.count;
+
+        // Primary: show only when 0 PDFs
+        if (count === 0) {
+          primaryZone.style.display = '';
+          primaryZone.classList.remove('disabled');
+        } else {
+          primaryZone.style.display = 'none';
+        }
+
+        // Secondary: show when 1-3 PDFs
+        if (count >= 1 && count < 4) {
+          const remaining = 4 - count;
+          secondaryZone.style.display = '';
+          secondaryZone.classList.remove('disabled');
+          secondaryText.textContent = `Upload secondary files`;
+          secondaryHint.textContent = `Select up to ${remaining} PDF(s) — renamed to AppID_${count + 1}${remaining > 1 ? '..._' + (count + remaining) : ''}`;
+        } else if (count >= 4) {
+          secondaryZone.style.display = '';
+          secondaryZone.classList.add('disabled');
+          secondaryText.textContent = 'Maximum 4 PDFs reached';
+          secondaryHint.textContent = 'Remove a file to upload a new one';
+        } else {
+          secondaryZone.style.display = 'none';
+        }
+
+        if (data.pdfs.length === 0) {
+          list.innerHTML = `
+            <div class="empty-state">
+              <div class="empty-title">No PDFs yet</div>
+              <div class="empty-sub">Upload files to this profile</div>
+            </div>`;
+          return;
+        }
+
+        list.innerHTML = data.pdfs.map((pdf, i) => {
+          const viewUrl = pdf.downloadUrl.replace('/download/', '/view/');
+          return `
+          <li class="pdf-item">
+            <div class="pdf-file-icon">PDF</div>
+            <div class="pdf-file-info">
+              <div class="pdf-file-name" title="${pdf.filename}">${pdf.filename}</div>
+              <div class="pdf-file-date">${formatSize(pdf.size)} · ${new Date(pdf.uploadedAt).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' })}</div>
+            </div>
+            <div class="pdf-file-actions">
+              <a href="javascript:void(0)" onclick="openPdfViewer('${viewUrl}', '${pdf.filename}')" class="btn btn-ghost btn-sm" title="View PDF">
+                <svg width="14" height="14" viewBox="0 0 14 14" fill="none"><path d="M7 3C3 3 1 7 1 7s2 4 6 4 6-4 6-4-2-4-6-4z" stroke="currentColor" stroke-width="1.2" stroke-linecap="round" stroke-linejoin="round"/><circle cx="7" cy="7" r="2" stroke="currentColor" stroke-width="1.2"/></svg>
+              </a>
+              <a href="${pdf.downloadUrl}" target="_blank" class="btn btn-ghost btn-sm" title="Download PDF">
+                <svg width="13" height="13" viewBox="0 0 13 13" fill="none"><path d="M6.5 1v8M6.5 9l-3-3M6.5 9l3-3M1.5 11h10" stroke="currentColor" stroke-width="1.2" stroke-linecap="round" stroke-linejoin="round"/></svg>
+              </a>
+              <button class="btn btn-ghost btn-sm" onclick="replacePdf(${i})" title="Replace PDF">
+                <svg width="13" height="13" viewBox="0 0 13 13" fill="none"><path d="M1 4.5h9M10 4.5l-2.5-3M10 4.5l-2.5 3M12 8.5H3M3 8.5l2.5-3M3 8.5l2.5 3" stroke="currentColor" stroke-width="1.2" stroke-linecap="round" stroke-linejoin="round"/></svg>
+              </button>
+              <button class="btn btn-danger btn-sm btn-icon" onclick="deletePdf(${i})" title="Remove PDF">
+                <svg width="13" height="13" viewBox="0 0 13 13" fill="none"><path d="M1 1l11 11M12 1L1 12" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"/></svg>
+              </button>
+            </div>
+          </li>`;
+        }).join('');
+      } catch {
+        list.innerHTML = '<div class="empty-state"><div class="empty-title">Failed to load PDFs</div></div>';
+      }
+    }
+
+    // --- Upload ---
+    async function uploadPdf(event, type) {
+      const files = event.target.files;
+      if (!files.length || !activeProfile) return;
+
+      if (type === 'primary' && files.length > 1) {
+        showToast('Primary upload accepts only 1 file', 'error');
+        event.target.value = '';
+        return;
+      }
+
+      if (type === 'secondary' && files.length > 3) {
+        showToast('Secondary upload accepts max 3 files', 'error');
+        event.target.value = '';
+        return;
+      }
+
+      const count = files.length;
+      const formData = new FormData();
+      for (const file of files) formData.append('pdfs', file);
+
+      const result = await api(`/api/profiles/${activeProfile}/pdfs`, { method: 'POST', body: formData });
+      event.target.value = '';
+
+      if (result && result.warning) {
+        showToast(result.warning, 'error');
+      } else {
+        showToast(type === 'primary' ? 'Primary file uploaded' : `${count} secondary file(s) uploaded`);
+      }
+      loadPdfs();
+      loadProfiles();
+    }
+
+    // --- Delete PDF ---
+    function deletePdf(index) {
+      if (!activeProfile) return;
+      showConfirm('Remove PDF', 'This PDF will be permanently removed from the profile.', async () => {
+        await api(`/api/profiles/${activeProfile}/pdfs/${index}`, { method: 'DELETE' });
+        showToast('PDF removed');
+        loadPdfs();
+        loadProfiles();
+      });
+    }
+
+    // --- PDF Viewer ---
+    function openPdfViewer(url, filename) {
+      document.getElementById('pdfViewerTitle').textContent = filename;
+      document.getElementById('pdfViewerFrame').src = url;
+      document.getElementById('pdfViewer').classList.add('open');
+      document.getElementById('pdfViewer').scrollIntoView({ behavior: 'smooth', block: 'nearest' });
+    }
+
+    function closePdfViewer() {
+      document.getElementById('pdfViewer').classList.remove('open');
+      document.getElementById('pdfViewerFrame').src = '';
+    }
+
+    // --- Copy ---
+    function copyFetchLink() {
+      navigator.clipboard.writeText(document.getElementById('fetchLink').textContent)
+        .then(() => showToast('Link copied'));
+    }
+
+    // --- Drag & drop ---
+    function setupDragDrop(zone, type) {
+      zone.addEventListener('dragover', e => { e.preventDefault(); zone.classList.add('dragover'); });
+      zone.addEventListener('dragleave', () => zone.classList.remove('dragover'));
+      zone.addEventListener('drop', e => {
+        e.preventDefault();
+        zone.classList.remove('dragover');
+        if (!activeProfile || zone.classList.contains('disabled')) return;
+        const files = [...e.dataTransfer.files].filter(f => f.type === 'application/pdf');
+        if (!files.length) return showToast('Only PDF files are allowed', 'error');
+        if (type === 'primary' && files.length > 1) return showToast('Drop only 1 file for primary', 'error');
+        if (type === 'secondary' && files.length > 3) return showToast('Drop max 3 files for secondary', 'error');
+        const formData = new FormData();
+        files.forEach(f => formData.append('pdfs', f));
+        api(`/api/profiles/${activeProfile}/pdfs`, { method: 'POST', body: formData })
+          .then(() => {
+            showToast(type === 'primary' ? 'Primary file uploaded' : `${files.length} secondary file(s) uploaded`);
+            loadPdfs();
+            loadProfiles();
+          });
+      });
+    }
+    setupDragDrop(document.getElementById('primaryUpload'), 'primary');
+    setupDragDrop(document.getElementById('secondaryUpload'), 'secondary');
+
+    // --- Init ---
+    loadProfiles();
+  </script>
+
+</body>
+</html>

@@ -1,0 +1,11 @@
+services:
+  - type: web
+    name: pdf-server
+    runtime: node
+    buildCommand: npm install
+    startCommand: node server.js
+    plan: free
+    region: singapore
+    envVars:
+      - key: NODE_ENV
+        value: production
