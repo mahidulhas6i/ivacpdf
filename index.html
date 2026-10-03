@@ -193,6 +193,74 @@
       font-size: 15px;
     }
 
+    /* ===== SELECTION ===== */
+    .selection-toolbar {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+      padding: 10px 16px;
+      background: var(--bg-card);
+      border: 1px solid var(--border);
+      border-radius: var(--radius);
+      margin-bottom: 14px;
+    }
+
+    .select-all-wrap {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      cursor: pointer;
+      user-select: none;
+    }
+
+    .select-label {
+      font-size: 13px;
+      color: var(--text-secondary);
+    }
+
+    .selected-count {
+      font-size: 12px;
+      color: var(--accent);
+      font-weight: 500;
+    }
+
+    .select-check {
+      width: 18px;
+      height: 18px;
+      border-radius: 4px;
+      border: 2px solid var(--border-hover);
+      background: var(--bg-input);
+      cursor: pointer;
+      appearance: none;
+      -webkit-appearance: none;
+      flex-shrink: 0;
+      position: relative;
+      transition: all 0.15s;
+    }
+
+    .select-check:checked {
+      background: var(--accent);
+      border-color: var(--accent);
+    }
+
+    .select-check:checked::after {
+      content: '';
+      position: absolute;
+      top: 2px;
+      left: 5px;
+      width: 5px;
+      height: 9px;
+      border: solid #fff;
+      border-width: 0 2px 2px 0;
+      transform: rotate(45deg);
+    }
+
+    .card-check-wrap {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+    }
+
     /* ===== PROFILES GRID ===== */
     .profiles-grid {
       display: grid;
@@ -618,6 +686,7 @@
       .header { padding: 0 14px; }
       .logo-text { font-size: 14px; }
       .upload-zones-row { grid-template-columns: 1fr; }
+      .selection-toolbar { flex-wrap: wrap; gap: 8px; }
     }
   </style>
 </head>
@@ -628,7 +697,7 @@
       <div class="logo-icon">P</div>
       <span class="logo-text">PDF Profile Manager</span>
     </div>
-    <span class="header-version">v1.0</span>
+    <span class="header-version">v1.1</span>
   </div>
 
   <div class="container">
@@ -655,6 +724,20 @@
       <button class="btn btn-accent" onclick="createProfile()">
         <svg width="14" height="14" viewBox="0 0 14 14" fill="none"><path d="M7 1v12M1 7h12" stroke="currentColor" stroke-width="2" stroke-linecap="round"/></svg>
         Create profile
+      </button>
+    </div>
+
+    <!-- Profile Selection Toolbar -->
+    <div class="selection-toolbar" id="profileSelectionToolbar" style="display:none">
+      <label class="select-all-wrap">
+        <input type="checkbox" class="select-check" id="selectAllProfiles" onchange="toggleAllProfiles(this.checked)">
+        <span class="select-label">Select all</span>
+      </label>
+      <span class="selected-count" id="selectedProfilesCount" style="display:none"></span>
+      <div style="flex:1"></div>
+      <button class="btn btn-danger btn-sm" id="deleteSelectedProfiles" style="display:none" onclick="deleteSelectedProfiles()">
+        <svg width="13" height="13" viewBox="0 0 13 13" fill="none"><path d="M1.5 3.5h10M4.5 3.5V2a1 1 0 011-1h2a1 1 0 011 1v1.5M5.5 6v3.5M7.5 6v3.5M3 3.5l.5 7a1 1 0 001 1h4a1 1 0 001-1l.5-7" stroke="currentColor" stroke-width="1.2" stroke-linecap="round" stroke-linejoin="round"/></svg>
+        Delete selected
       </button>
     </div>
 
@@ -713,6 +796,20 @@
           </div>
         </div>
 
+        <!-- PDF Selection Toolbar -->
+        <div class="selection-toolbar" id="pdfSelectionToolbar" style="display:none">
+          <label class="select-all-wrap">
+            <input type="checkbox" class="select-check" id="selectAllPdfs" onchange="toggleAllPdfs(this.checked)">
+            <span class="select-label">Select all</span>
+          </label>
+          <span class="selected-count" id="selectedPdfsCount" style="display:none"></span>
+          <div style="flex:1"></div>
+          <button class="btn btn-danger btn-sm" id="deleteSelectedPdfs" style="display:none" onclick="deleteSelectedPdfs()">
+            <svg width="13" height="13" viewBox="0 0 13 13" fill="none"><path d="M1.5 3.5h10M4.5 3.5V2a1 1 0 011-1h2a1 1 0 011 1v1.5M5.5 6v3.5M7.5 6v3.5M3 3.5l.5 7a1 1 0 001 1h4a1 1 0 001-1l.5-7" stroke="currentColor" stroke-width="1.2" stroke-linecap="round" stroke-linejoin="round"/></svg>
+            Delete selected
+          </button>
+        </div>
+
         <ul class="pdf-list" id="pdfList"></ul>
 
         <!-- Inline PDF Viewer -->
@@ -763,6 +860,8 @@
 
   <script>
     let activeProfile = null;
+    let selectedProfiles = new Set();
+    let selectedPdfs = new Set();
 
     // --- Format file size ---
     function formatSize(bytes) {
@@ -792,6 +891,49 @@
       document.getElementById('confirmModal').classList.remove('open');
     }
 
+    // --- Prompt Modal ---
+    function showPrompt(title, text, defaultVal, onConfirm) {
+      document.getElementById('promptTitle').textContent = title;
+      document.getElementById('promptText').textContent = text;
+      const input = document.getElementById('promptInput');
+      input.value = defaultVal || '';
+      input.select();
+      document.getElementById('promptConfirmBtn').onclick = () => {
+        closePrompt();
+        onConfirm(input.value);
+      };
+      document.getElementById('promptModal').classList.add('open');
+      setTimeout(() => input.focus(), 100);
+    }
+
+    function closePrompt() {
+      document.getElementById('promptModal').classList.remove('open');
+    }
+
+    // --- Keyboard shortcuts for modals ---
+    document.addEventListener('keydown', (e) => {
+      const confirmModal = document.getElementById('confirmModal');
+      const promptModal = document.getElementById('promptModal');
+
+      if (e.key === 'Enter') {
+        if (confirmModal.classList.contains('open')) {
+          e.preventDefault();
+          document.getElementById('modalConfirmBtn').click();
+        }
+      }
+
+      if (e.key === 'Escape') {
+        if (confirmModal.classList.contains('open')) {
+          e.preventDefault();
+          closeModal();
+        }
+        if (promptModal.classList.contains('open')) {
+          e.preventDefault();
+          closePrompt();
+        }
+      }
+    });
+
     // --- API ---
     async function api(url, opts = {}) {
       try {
@@ -805,9 +947,132 @@
       }
     }
 
+    // ===================== PROFILE SELECTION =====================
+
+    function toggleProfileSelect(name) {
+      if (selectedProfiles.has(name)) {
+        selectedProfiles.delete(name);
+      } else {
+        selectedProfiles.add(name);
+      }
+      // Update this checkbox immediately
+      const card = document.querySelector(`.profile-card[data-name="${name}"] .select-check`);
+      if (card) card.checked = selectedProfiles.has(name);
+      updateProfileToolbar();
+    }
+
+    function toggleAllProfiles(checked) {
+      selectedProfiles.clear();
+      if (checked) {
+        document.querySelectorAll('.profile-card').forEach(card => {
+          selectedProfiles.add(card.dataset.name);
+        });
+      }
+      document.querySelectorAll('.profile-card .select-check').forEach(check => {
+        check.checked = checked;
+      });
+      updateProfileToolbar();
+    }
+
+    function updateProfileToolbar() {
+      const count = selectedProfiles.size;
+      const deleteBtn = document.getElementById('deleteSelectedProfiles');
+      const countEl = document.getElementById('selectedProfilesCount');
+      const selectAllCheck = document.getElementById('selectAllProfiles');
+      const allCards = document.querySelectorAll('.profile-card');
+
+      deleteBtn.style.display = count > 0 ? '' : 'none';
+      deleteBtn.innerHTML = `<svg width="13" height="13" viewBox="0 0 13 13" fill="none"><path d="M1.5 3.5h10M4.5 3.5V2a1 1 0 011-1h2a1 1 0 011 1v1.5M5.5 6v3.5M7.5 6v3.5M3 3.5l.5 7a1 1 0 001 1h4a1 1 0 001-1l.5-7" stroke="currentColor" stroke-width="1.2" stroke-linecap="round" stroke-linejoin="round"/></svg> Delete selected (${count})`;
+      countEl.style.display = count > 0 ? '' : 'none';
+      countEl.textContent = `${count} selected`;
+      selectAllCheck.checked = allCards.length > 0 && count === allCards.length;
+      selectAllCheck.indeterminate = count > 0 && count < allCards.length;
+    }
+
+    function deleteSelectedProfiles() {
+      if (selectedProfiles.size === 0) return;
+      const count = selectedProfiles.size;
+      const names = [...selectedProfiles];
+      showConfirm('Delete profiles', `Permanently delete ${count} profile(s) and all their PDFs?`, async () => {
+        await api('/api/profiles/batch-delete', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ names })
+        });
+        showToast(`${count} profile(s) deleted`);
+        if (activeProfile && names.includes(activeProfile)) {
+          closeDetail();
+        }
+        selectedProfiles.clear();
+        loadProfiles();
+      });
+    }
+
+    // ===================== PDF SELECTION =====================
+
+    function togglePdfSelect(index) {
+      if (selectedPdfs.has(index)) {
+        selectedPdfs.delete(index);
+      } else {
+        selectedPdfs.add(index);
+      }
+      const checks = document.querySelectorAll('#pdfList .select-check');
+      if (checks[index]) checks[index].checked = selectedPdfs.has(index);
+      updatePdfToolbar();
+    }
+
+    function toggleAllPdfs(checked) {
+      selectedPdfs.clear();
+      if (checked) {
+        document.querySelectorAll('#pdfList .pdf-item').forEach((_, i) => {
+          selectedPdfs.add(i);
+        });
+      }
+      document.querySelectorAll('#pdfList .select-check').forEach(check => {
+        check.checked = checked;
+      });
+      updatePdfToolbar();
+    }
+
+    function updatePdfToolbar() {
+      const count = selectedPdfs.size;
+      const deleteBtn = document.getElementById('deleteSelectedPdfs');
+      const countEl = document.getElementById('selectedPdfsCount');
+      const selectAllCheck = document.getElementById('selectAllPdfs');
+      const allItems = document.querySelectorAll('#pdfList .pdf-item');
+
+      deleteBtn.style.display = count > 0 ? '' : 'none';
+      deleteBtn.innerHTML = `<svg width="13" height="13" viewBox="0 0 13 13" fill="none"><path d="M1.5 3.5h10M4.5 3.5V2a1 1 0 011-1h2a1 1 0 011 1v1.5M5.5 6v3.5M7.5 6v3.5M3 3.5l.5 7a1 1 0 001 1h4a1 1 0 001-1l.5-7" stroke="currentColor" stroke-width="1.2" stroke-linecap="round" stroke-linejoin="round"/></svg> Delete selected (${count})`;
+      countEl.style.display = count > 0 ? '' : 'none';
+      countEl.textContent = `${count} selected`;
+      selectAllCheck.checked = allItems.length > 0 && count === allItems.length;
+      selectAllCheck.indeterminate = count > 0 && count < allItems.length;
+    }
+
+    function deleteSelectedPdfs() {
+      if (selectedPdfs.size === 0 || !activeProfile) return;
+      const count = selectedPdfs.size;
+      showConfirm('Remove PDFs', `Permanently remove ${count} PDF(s) from this profile?`, async () => {
+        await api(`/api/profiles/${activeProfile}/pdfs/batch-delete`, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ indices: [...selectedPdfs] })
+        });
+        showToast(`${count} PDF(s) removed`);
+        selectedPdfs.clear();
+        closePdfViewer();
+        loadPdfs();
+        loadProfiles();
+      });
+    }
+
+    // ===================== PROFILES =====================
+
     // --- Load profiles ---
     async function loadProfiles() {
       const grid = document.getElementById('profilesGrid');
+      const toolbar = document.getElementById('profileSelectionToolbar');
+
       try {
         const profiles = await api('/api/profiles');
 
@@ -819,6 +1084,8 @@
         document.getElementById('statStorage').textContent = formatSize(totalSize);
 
         if (profiles.length === 0) {
+          toolbar.style.display = 'none';
+          selectedProfiles.clear();
           grid.innerHTML = `
             <div class="empty-state" style="grid-column:1/-1">
               <div class="empty-icon">
@@ -830,14 +1097,27 @@
           return;
         }
 
+        // Show toolbar
+        toolbar.style.display = 'flex';
+
+        // Remove stale selections (profiles that no longer exist)
+        const existingNames = new Set(profiles.map(p => p.name));
+        for (const name of selectedProfiles) {
+          if (!existingNames.has(name)) selectedProfiles.delete(name);
+        }
+
         grid.innerHTML = profiles.map(p => {
           const pct = (p.pdfCount / 4) * 100;
           const badgeClass = p.pdfCount === 4 ? 'badge-full' : p.pdfCount > 0 ? 'badge-partial' : 'badge-empty';
           const progressClass = p.pdfCount === 4 ? 'progress-full' : p.pdfCount > 0 ? 'progress-partial' : 'progress-empty';
+          const isChecked = selectedProfiles.has(p.name) ? 'checked' : '';
           return `
-            <div class="profile-card ${activeProfile === p.name ? 'active' : ''}" onclick="openProfile('${p.name}')">
+            <div class="profile-card ${activeProfile === p.name ? 'active' : ''}" data-name="${p.name}" onclick="openProfile('${p.name}')">
               <div class="card-top">
-                <span class="card-name">${p.name}</span>
+                <div class="card-check-wrap">
+                  <input type="checkbox" class="select-check" ${isChecked} onclick="event.stopPropagation(); toggleProfileSelect('${p.name}')">
+                  <span class="card-name">${p.name}</span>
+                </div>
                 <span class="card-badge ${badgeClass}">${p.pdfCount}/4</span>
               </div>
               <div class="card-progress">
@@ -852,7 +1132,10 @@
               </div>
             </div>`;
         }).join('');
+
+        updateProfileToolbar();
       } catch {
+        toolbar.style.display = 'none';
         grid.innerHTML = '<div class="empty-state" style="grid-column:1/-1"><div class="empty-title">Failed to load</div></div>';
       }
     }
@@ -877,6 +1160,7 @@
     // --- Open profile ---
     function openProfile(name) {
       activeProfile = name;
+      selectedPdfs.clear();
       document.getElementById('detailPanel').classList.add('open');
       document.getElementById('detailTitle').textContent = name;
       document.getElementById('fetchLink').textContent = `${location.origin}/${name}`;
@@ -888,7 +1172,9 @@
     // --- Close ---
     function closeDetail() {
       activeProfile = null;
+      selectedPdfs.clear();
       document.getElementById('detailPanel').classList.remove('open');
+      document.getElementById('pdfSelectionToolbar').style.display = 'none';
       closePdfViewer();
       loadProfiles();
     }
@@ -947,25 +1233,6 @@
       loadProfiles();
     }
 
-    // --- Prompt Modal ---
-    function showPrompt(title, text, defaultVal, onConfirm) {
-      document.getElementById('promptTitle').textContent = title;
-      document.getElementById('promptText').textContent = text;
-      const input = document.getElementById('promptInput');
-      input.value = defaultVal || '';
-      input.select();
-      document.getElementById('promptConfirmBtn').onclick = () => {
-        closePrompt();
-        onConfirm(input.value);
-      };
-      document.getElementById('promptModal').classList.add('open');
-      setTimeout(() => input.focus(), 100);
-    }
-
-    function closePrompt() {
-      document.getElementById('promptModal').classList.remove('open');
-    }
-
     // --- Load PDFs ---
     async function loadPdfs() {
       if (!activeProfile) return;
@@ -974,6 +1241,10 @@
       const secondaryZone = document.getElementById('secondaryUpload');
       const secondaryText = document.getElementById('secondaryText');
       const secondaryHint = document.getElementById('secondaryHint');
+      const pdfToolbar = document.getElementById('pdfSelectionToolbar');
+
+      // Clear PDF selections on reload
+      selectedPdfs.clear();
 
       try {
         const data = await api(`/api/data/${activeProfile}`);
@@ -1004,6 +1275,7 @@
         }
 
         if (data.pdfs.length === 0) {
+          pdfToolbar.style.display = 'none';
           list.innerHTML = `
             <div class="empty-state">
               <div class="empty-title">No PDFs yet</div>
@@ -1012,10 +1284,15 @@
           return;
         }
 
+        // Show PDF toolbar
+        pdfToolbar.style.display = 'flex';
+
         list.innerHTML = data.pdfs.map((pdf, i) => {
           const viewUrl = pdf.downloadUrl.replace('/download/', '/view/');
+          const isChecked = selectedPdfs.has(i) ? 'checked' : '';
           return `
           <li class="pdf-item">
+            <input type="checkbox" class="select-check" ${isChecked} onclick="togglePdfSelect(${i})">
             <div class="pdf-file-icon">PDF</div>
             <div class="pdf-file-info">
               <div class="pdf-file-name" title="${pdf.filename}">${pdf.filename}</div>
@@ -1037,7 +1314,10 @@
             </div>
           </li>`;
         }).join('');
+
+        updatePdfToolbar();
       } catch {
+        pdfToolbar.style.display = 'none';
         list.innerHTML = '<div class="empty-state"><div class="empty-title">Failed to load PDFs</div></div>';
       }
     }

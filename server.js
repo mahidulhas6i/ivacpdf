@@ -383,6 +383,81 @@ app.put('/api/profiles/:name/pdfs/:index', upload.single('pdf'), async (req, res
   res.json(profiles[name]);
 });
 
+// Batch delete profiles
+app.post('/api/profiles/batch-delete', (req, res) => {
+  const { names } = req.body;
+  if (!names || !Array.isArray(names) || names.length === 0) {
+    return res.status(400).json({ error: 'No profiles specified' });
+  }
+
+  const profiles = readProfiles();
+  const deleted = [];
+
+  for (const name of names) {
+    if (!profiles[name]) continue;
+    const profileDir = path.join(UPLOADS_DIR, name);
+    if (fs.existsSync(profileDir)) {
+      fs.rmSync(profileDir, { recursive: true });
+    }
+    delete profiles[name];
+    deleted.push(name);
+  }
+
+  writeProfiles(profiles);
+  res.json({ deleted, count: deleted.length });
+});
+
+// Batch delete PDFs from a profile
+app.post('/api/profiles/:name/pdfs/batch-delete', (req, res) => {
+  const profiles = readProfiles();
+  const { name } = req.params;
+  const { indices } = req.body;
+
+  if (!profiles[name]) {
+    return res.status(404).json({ error: 'Profile not found' });
+  }
+  if (!indices || !Array.isArray(indices) || indices.length === 0) {
+    return res.status(400).json({ error: 'No PDFs specified' });
+  }
+
+  // Parse, deduplicate, validate, sort descending to avoid index shift
+  const sortedIndices = [...new Set(indices.map(i => parseInt(i)))]
+    .filter(i => !isNaN(i) && i >= 0 && i < profiles[name].pdfs.length)
+    .sort((a, b) => b - a);
+
+  if (sortedIndices.length === 0) {
+    return res.status(400).json({ error: 'No valid PDF indices' });
+  }
+
+  // Delete files from disk in reverse order
+  for (const idx of sortedIndices) {
+    const pdf = profiles[name].pdfs[idx];
+    const filePath = path.join(UPLOADS_DIR, name, pdf.storedName);
+    if (fs.existsSync(filePath)) fs.unlinkSync(filePath);
+    profiles[name].pdfs.splice(idx, 1);
+  }
+
+  // Renumber remaining PDFs
+  const profileDir = path.join(UPLOADS_DIR, name);
+  for (let i = 0; i < profiles[name].pdfs.length; i++) {
+    const p = profiles[name].pdfs[i];
+    const serial = i + 1;
+    const appId = p.appId;
+    const newFilename = appId ? `${appId}_${serial}.pdf` : p.filename;
+    const newStoredName = `${serial}_${appId || Date.now()}.pdf`;
+    const oldPath = path.join(profileDir, p.storedName);
+    const newPath = path.join(profileDir, newStoredName);
+    if (p.storedName !== newStoredName && fs.existsSync(oldPath)) {
+      fs.renameSync(oldPath, newPath);
+    }
+    p.filename = newFilename;
+    p.storedName = newStoredName;
+  }
+
+  writeProfiles(profiles);
+  res.json(profiles[name]);
+});
+
 // ===================== PUBLIC FETCH =====================
 
 // JSON data for dashboard
